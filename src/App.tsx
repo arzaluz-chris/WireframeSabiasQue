@@ -1,12 +1,17 @@
-import React, { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Heart, Share2, Home, Bookmark, User, RefreshCw, Sparkles, Bell, Moon, Info, Star, Trash2 } from 'lucide-react';
+import { useState, useEffect, type ReactNode } from 'react';
+import { ChevronLeft, ChevronRight, Heart, Share2, Home, User, RefreshCw, Sparkles, Bell, Moon, Info, Star, Trash2 } from 'lucide-react';
 
 const WireframeApp = () => {
   const [currentTab, setCurrentTab] = useState(0); // 0: Home, 1: Favorites, 2: Profile
-  const [currentScreen, setCurrentScreen] = useState('splash');
-  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [currentScreen, setCurrentScreen] = useState<'splash' | 'home' | 'fact'>('splash');
+  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [currentFactIndex, setCurrentFactIndex] = useState(0);
-  const [favorites, setFavorites] = useState([]);
+  const [favorites, setFavorites] = useState<Array<{
+    fact: string;
+    category: Category;
+    emoji: string;
+    date: Date;
+  }>>([]);
   const [isAnimating, setIsAnimating] = useState(false);
 
   // Datos exactos de FactProvider.m
@@ -32,9 +37,18 @@ const WireframeApp = () => {
       'La primera página web sigue activa desde 1991',
       'Un iPhone tiene más poder que las computadoras del Apollo 11'
     ]
-  };
+  } as const;
 
-  const categoryConfig = {
+  type Category = keyof typeof facts;
+
+  const categoryConfig: Record<Category, {
+    emoji: string;
+    gradient: string;
+    bgLight: string;
+    title: string;
+    count: number;
+    rating: string;
+  }> = {
     ciencia: {
       emoji: '🧬',
       gradient: 'from-emerald-400 to-cyan-400',
@@ -71,13 +85,14 @@ const WireframeApp = () => {
     }
   }, [currentScreen]);
 
-  const handleCategorySelect = (category) => {
+  const handleCategorySelect = (category: Category) => {
     setSelectedCategory(category);
     setCurrentFactIndex(0);
     setCurrentScreen('fact');
   };
 
   const handleNextFact = () => {
+    if (!selectedCategory) return;
     setIsAnimating(true);
     setTimeout(() => {
       setCurrentFactIndex((prevIndex) => (prevIndex + 1) % facts[selectedCategory].length);
@@ -86,11 +101,12 @@ const WireframeApp = () => {
   };
 
   const toggleFavorite = () => {
+    if (!selectedCategory) return;
     const currentFact = facts[selectedCategory][currentFactIndex];
-    const existingIndex = favorites.findIndex(f => 
+    const existingIndex = favorites.findIndex(f =>
       f.fact === currentFact && f.category === selectedCategory
     );
-    
+
     if (existingIndex > -1) {
       setFavorites(favorites.filter((_, i) => i !== existingIndex));
     } else {
@@ -109,17 +125,18 @@ const WireframeApp = () => {
     return favorites.some(f => f.fact === currentFact && f.category === selectedCategory);
   };
 
-  const removeFavorite = (index) => {
+  const removeFavorite = (index: number) => {
     setFavorites(favorites.filter((_, i) => i !== index));
   };
 
   const shareFact = () => {
+    if (!selectedCategory) return;
     const currentFact = facts[selectedCategory][currentFactIndex];
     alert(`Compartir: ¿Sabías qué? ${currentFact}`);
   };
 
   // iPhone Frame Component
-  const PhoneFrame = ({ children }) => (
+  const PhoneFrame = ({ children }: { children: ReactNode }) => (
     <div className="relative mx-auto" style={{ width: '390px', height: '844px' }}>
       <div className="absolute inset-0 bg-gradient-to-b from-gray-900 to-gray-800 rounded-[50px] shadow-2xl">
         {/* Dynamic Island */}
@@ -194,12 +211,12 @@ const WireframeApp = () => {
       <div className="flex-1 px-6 overflow-y-auto pb-20">
         <h2 className="text-lg font-bold text-gray-800 mb-4">Categorías Populares</h2>
         
-        {Object.entries(categoryConfig).map(([key, config]) => (
-          <button
-            key={key}
-            onClick={() => handleCategorySelect(key)}
-            className={`w-full bg-gradient-to-r ${config.gradient} p-0.5 rounded-2xl shadow-lg mb-4 hover:shadow-xl transform hover:scale-[1.02] transition-all duration-300`}
-          >
+        {(Object.entries(categoryConfig) as [Category, typeof categoryConfig[Category]][]).map(([key, config]) => (
+            <button
+              key={key}
+              onClick={() => handleCategorySelect(key)}
+              className={`w-full bg-gradient-to-r ${config.gradient} p-0.5 rounded-2xl shadow-lg mb-4 hover:shadow-xl transform hover:scale-[1.02] transition-all duration-300`}
+            >
             <div className="bg-white rounded-[19px] p-5 flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <div className={`w-14 h-14 bg-gradient-to-br ${config.bgLight} rounded-2xl flex items-center justify-center`}>
